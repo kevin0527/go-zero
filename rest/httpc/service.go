@@ -18,7 +18,7 @@ type (
 	// Service represents a remote HTTP service.
 	Service interface {
 		// Do sends an HTTP request with the given arguments and returns an HTTP response.
-		Do(ctx context.Context, method, url string, data interface{}) (*http.Response, error)
+		Do(ctx context.Context, method, url string, data any) (*http.Response, error)
 		// DoRequest sends a HTTP request to the service.
 		DoRequest(r *http.Request) (*http.Response, error)
 		// DoRequestWithRetry sends an HTTP request to the service with retry fucntion.
@@ -49,7 +49,7 @@ func NewServiceWithClient(name string, cli *http.Client, opts ...Option) Service
 }
 
 // Do sends an HTTP request with the given arguments and returns an HTTP response.
-func (s namedService) Do(ctx context.Context, method, url string, data interface{}) (*http.Response, error) {
+func (s namedService) Do(ctx context.Context, method, url string, data any) (*http.Response, error) {
 	req, err := buildRequest(ctx, method, url, data)
 	if err != nil {
 		return nil, err
@@ -83,7 +83,7 @@ func (s namedService) do(r *http.Request) (resp *http.Response, err error) {
 	}
 
 	brk := breaker.GetBreaker(s.name)
-	err = brk.DoWithAcceptable(func() error {
+	err = brk.DoWithAcceptableCtx(r.Context(), func() error {
 		resp, err = s.cli.Do(r)
 		return err
 	}, func(err error) bool {
